@@ -1,57 +1,57 @@
 # Markdown Editor
 
-A modern Markdown editor built with Tauri, React, and CodeMirror.
+一个现代化的 Markdown 编辑器，基于 Tauri、React 和 CodeMirror 构建。
 
-## Features
+## 功能特性
 
-- Real-time Markdown preview
-- Syntax highlighting with CodeMirror 6
-- Support for code block highlighting
-- Cross-platform desktop application
-- File open/save dialogs
+- 实时 Markdown 预览
+- CodeMirror 6 语法高亮
+- 代码块高亮支持
+- 跨平台桌面应用
+- 文件打开/保存对话框
 
-## Download
+## 下载
 
-Download the latest version from [GitHub Releases](https://github.com/admxj/Markdown-Editor/releases).
+从 [GitHub Releases](https://github.com/admxj/Markdown-Editor/releases) 下载最新版本。
 
-### Supported Platforms
-- **macOS**: Universal DMG (Intel & Apple Silicon)
+### 支持的平台
+- **macOS**: 通用 DMG（Intel 和 Apple Silicon 均支持）
 - **Linux**: .deb, .rpm
 - **Windows**: .msi, .exe (NSIS)
 
-## Development
+## 开发
 
-### Prerequisites
+### 环境要求
 
 - Node.js 20+
 - Rust
 - npm
 
-### Setup
+### 安装依赖
 
 ```bash
 npm install
 ```
 
-### Run Development Server
+### 运行开发服务器
 
 ```bash
 npm run tauri dev
 ```
 
-### Build
+### 构建
 
 ```bash
 npm run tauri build
 ```
 
-## Tech Stack
+## 技术栈
 
-- **Frontend**: React 19, TypeScript, Vite
-- **Editor**: CodeMirror 6
-- **Backend**: Tauri 2 (Rust)
+- **前端**: React 19, TypeScript, Vite
+- **编辑器**: CodeMirror 6
+- **后端**: Tauri 2 (Rust)
 - **Markdown**: marked, highlight.js
 
-## License
+## 许可证
 
 MIT
