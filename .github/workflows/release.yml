@@ -1,0 +1,188 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos-universal:
+    permissions:
+      contents: write
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: 'aarch64-apple-darwin, x86_64-apple-darwin'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri app (Intel)
+        run: npm run tauri build -- --target x86_64-apple-darwin
+
+      - name: Build Tauri app (Apple Silicon)
+        run: npm run tauri build -- --target aarch64-apple-darwin
+
+      - name: Create universal app
+        run: |
+          # Create directory for universal app
+          mkdir -p src-tauri/target/release/bundle/macos-universal
+
+          # Get the app bundle paths
+          INTEL_APP=$(ls -d src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app)
+          ARM_APP=$(ls -d src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app)
+
+          # Create universal binary using lipo
+          mkdir -p "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}"
+          cp -r "${INTEL_APP}/Contents" "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}/"
+
+          # Replace the binary with universal binary
+          lipo -create \
+            "${INTEL_APP}/Contents/MacOS/Markdown Editor" \
+            "${ARM_APP}/Contents/MacOS/Markdown Editor" \
+            -output "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}/Contents/MacOS/Markdown Editor"
+
+          # Copy resources from arm app
+          cp -r "${ARM_APP}/Contents/Resources" "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}/Contents/"
+
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+          create-dmg \
+            --volname "Markdown Editor" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "Markdown Editor.app" 150 185 \
+            --app-drop-link 450 185 \
+            "src-tauri/target/release/bundle/macos/Markdown-Editor-${{ github.ref_name }}-universal.dmg" \
+            "src-tauri/target/release/bundle/macos-universal/"
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-bundle
+          path: |
+            src-tauri/target/release/bundle/macos/*.dmg
+            src-tauri/target/release/bundle/macos/*.app
+
+  build-linux:
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-bundle
+          path: src-tauri/target/release/bundle/
+
+  build-windows:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-bundle
+          path: src-tauri/target/release/bundle/
+
+  release:
+    needs: [build-macos-universal, build-linux, build-windows]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Markdown Editor v${{ github.ref_name }}
+          body: |
+            ## Downloads
+
+            Download the installer for your platform below.
+
+            ### macOS
+            - Universal DMG (works on both Intel and Apple Silicon)
+
+            ### Linux
+            - Debian package (.deb)
+            - RPM package (.rpm)
+
+            ### Windows
+            - MSI installer
+            - NSIS installer
+          files: |
+            artifacts/macos-bundle/*.dmg
+            artifacts/linux-bundle/deb/*.deb
+            artifacts/linux-bundle/rpm/*.rpm
+            artifacts/windows-bundle/msi/*.msi
+            artifacts/windows-bundle/nsis/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
