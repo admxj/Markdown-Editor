@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo:*)",
+      "Bash(rustc:*)",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(source:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout 90 bash -c 'source \"$HOME/.cargo/env\" && npm run tauri dev 2>&1' || true)",
+      "Bash(git add .gitignore .vscode/ README.md index.html package-lock.json package.json public/ src-tauri/ src/ tsconfig.json tsconfig.node.json vite.config.ts)"
+    ]
+  }
+}

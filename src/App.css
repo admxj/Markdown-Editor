@@ -373,3 +373,18 @@ body {
 .light .hljs-meta {
   color: #6e7781;
 }
+
+/* Mermaid diagram styles */
+.mermaid-container {
+  margin: 1em 0;
+  text-align: center;
+  background: var(--bg-tertiary);
+  padding: 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.mermaid-error {
+  color: #ff6b6b;
+  font-weight: bold;
+}

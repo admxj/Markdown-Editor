@@ -7,7 +7,15 @@ import { markdown } from '@codemirror/lang-markdown'
 import { Marked } from 'marked'
 import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js'
+import mermaid from 'mermaid'
 import './App.css'
+
+// Initialize mermaid
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'loose',
+})
 
 // Configure marked with highlight.js
 const marked = new Marked(
@@ -24,6 +32,24 @@ const marked = new Marked(
   })
 )
 
+// Custom renderer for mermaid
+marked.use({
+  renderer: {
+    code({ text, lang }: { text: string; lang?: string }) {
+      if (lang === 'mermaid') {
+        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
+        return `<div class="mermaid-container"><div class="mermaid" id="${id}">${text}</div></div>`
+      }
+      // Default code block rendering
+      const language = lang && hljs.getLanguage(lang) ? lang : ''
+      const highlighted = language
+        ? hljs.highlight(text, { language }).value
+        : hljs.highlightAuto(text).value
+      return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`
+    }
+  }
+})
+
 function App() {
   const [content, setContent] = useState<string>('# Welcome to Markdown Editor\n\nStart typing your markdown here...')
   const [html, setHtml] = useState<string>('')
@@ -34,12 +60,28 @@ function App() {
   const isDragging = useRef(false)
   const editorRef = useRef<HTMLDivElement>(null)
   const editorViewRef = useRef<EditorView | null>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
 
-  // Render markdown to HTML
+  // Render markdown to HTML and then render mermaid diagrams
   useEffect(() => {
     const renderMarkdown = async () => {
       const result = await marked.parse(content)
       setHtml(result as string)
+
+      // After HTML is set, render mermaid diagrams
+      setTimeout(async () => {
+        if (previewRef.current) {
+          const mermaidElements = previewRef.current.querySelectorAll('.mermaid')
+          for (const el of mermaidElements) {
+            try {
+              await mermaid.run({ nodes: [el as HTMLElement] })
+            } catch (error) {
+              console.error('Mermaid render error:', error)
+              el.innerHTML = `<span class="mermaid-error">Diagram render error</span>`
+            }
+          }
+        }
+      }, 0)
     }
     renderMarkdown()
   }, [content])
@@ -227,6 +269,7 @@ function App() {
         <div className="preview-pane" style={{ width: `${100 - splitRatio}%` }}>
           <div className="pane-header">Preview</div>
           <div
+            ref={previewRef}
             className="preview-container"
             dangerouslySetInnerHTML={{ __html: html }}
           />
