@@ -33,25 +33,32 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app (Intel)
-        run: npm run tauri build -- --target x86_64-apple-darwin
+        run: |
+          npm run tauri build -- --target x86_64-apple-darwin
+          # Copy to separate location to avoid being overwritten
+          mkdir -p src-tauri/target/release-Intel
+          cp -r src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app src-tauri/target/release-Intel/
 
       - name: Build Tauri app (Apple Silicon)
-        run: npm run tauri build -- --target aarch64-apple-darwin
+        run: |
+          npm run tauri build -- --target aarch64-apple-darwin
+          # Copy to separate location
+          mkdir -p src-tauri/target/release-ARM
+          cp -r src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app src-tauri/target/release-ARM/
 
       - name: Create universal app
         run: |
-          # Create directory for universal app
-          mkdir -p src-tauri/target/release/bundle/macos-universal
-
           # Get the app bundle paths
-          INTEL_APP=$(ls -d src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app)
-          ARM_APP=$(ls -d src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app)
+          INTEL_APP=$(ls -d src-tauri/target/release-Intel/*.app)
+          ARM_APP=$(ls -d src-tauri/target/release-ARM/*.app)
 
-          # Create universal binary using lipo
+          # Create universal binary directory
           mkdir -p "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}"
+
+          # Copy Intel app as base
           cp -r "${INTEL_APP}/Contents" "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}/"
 
-          # Replace the binary with universal binary
+          # Create universal binary using lipo
           lipo -create \
             "${INTEL_APP}/Contents/MacOS/Markdown Editor" \
             "${ARM_APP}/Contents/MacOS/Markdown Editor" \
