@@ -8,6 +8,7 @@ import { Marked } from 'marked'
 import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js'
 import mermaid from 'mermaid'
+import { sampleContent } from './sample'
 import './App.css'
 
 // Initialize mermaid
@@ -15,6 +16,10 @@ mermaid.initialize({
   startOnLoad: false,
   theme: 'default',
   securityLevel: 'loose',
+  flowchart: { useMaxWidth: true, htmlLabels: true },
+  sequence: { showSequenceNumbers: true },
+  gantt: { titleTopMargin: 25, barHeight: 20 },
+  pie: { useMaxWidth: true },
 })
 
 // Configure marked with highlight.js
@@ -51,7 +56,7 @@ marked.use({
 })
 
 function App() {
-  const [content, setContent] = useState<string>('# Welcome to Markdown Editor\n\nStart typing your markdown here...')
+  const [content, setContent] = useState<string>(sampleContent)
   const [html, setHtml] = useState<string>('')
   const [currentFile, setCurrentFile] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
@@ -62,29 +67,38 @@ function App() {
   const editorViewRef = useRef<EditorView | null>(null)
   const previewRef = useRef<HTMLDivElement>(null)
 
-  // Render markdown to HTML and then render mermaid diagrams
+  // Render markdown to HTML
   useEffect(() => {
     const renderMarkdown = async () => {
       const result = await marked.parse(content)
       setHtml(result as string)
-
-      // After HTML is set, render mermaid diagrams
-      setTimeout(async () => {
-        if (previewRef.current) {
-          const mermaidElements = previewRef.current.querySelectorAll('.mermaid')
-          for (const el of mermaidElements) {
-            try {
-              await mermaid.run({ nodes: [el as HTMLElement] })
-            } catch (error) {
-              console.error('Mermaid render error:', error)
-              el.innerHTML = `<span class="mermaid-error">Diagram render error</span>`
-            }
-          }
-        }
-      }, 0)
     }
     renderMarkdown()
   }, [content])
+
+  // Render mermaid diagrams after HTML is set
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!previewRef.current) return
+
+      const mermaidDivs = previewRef.current.querySelectorAll('.mermaid')
+
+      mermaidDivs.forEach((div, index) => {
+        if (div.querySelector('svg')) return // Already rendered
+
+        const graphDefinition = div.textContent || ''
+        const id = `mermaid-${index}-${Date.now()}`
+
+        try {
+          mermaid.render(id, graphDefinition).then(({ svg }) => {
+            div.innerHTML = svg
+          }).catch(() => {})
+        } catch { /* empty */ }
+      })
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [html])
 
   // Initialize CodeMirror
   useEffect(() => {
@@ -222,14 +236,13 @@ function App() {
   }, [content, currentFile])
 
   const handleNew = useCallback(() => {
-    const newContent = '# New Document\n\nStart typing...'
-    setContent(newContent)
+    setContent(sampleContent)
     setCurrentFile(null)
     setIsDirty(false)
 
     if (editorViewRef.current) {
       editorViewRef.current.dispatch({
-        changes: { from: 0, to: editorViewRef.current.state.doc.length, insert: newContent }
+        changes: { from: 0, to: editorViewRef.current.state.doc.length, insert: sampleContent }
       })
     }
   }, [])
