@@ -81,7 +81,7 @@ jobs:
             --icon-size 100 \
             --icon "Markdown Editor.app" 150 185 \
             --app-drop-link 450 185 \
-            "src-tauri/target/release/bundle/macos/Markdown-Editor-${{ github.ref_name }}-universal.dmg" \
+            "src-tauri/target/release/bundle/macos-universal/Markdown-Editor-${{ github.ref_name }}-universal.dmg" \
             "src-tauri/target/release/bundle/macos-universal/"
 
       - name: Upload macOS artifacts
@@ -89,8 +89,8 @@ jobs:
         with:
           name: macos-bundle
           path: |
-            src-tauri/target/release/bundle/macos/*.dmg
-            src-tauri/target/release/bundle/macos/*.app
+            src-tauri/target/release/bundle/macos-universal/*.dmg
+            src-tauri/target/release/bundle/macos-universal/*.app
 
   build-linux:
     permissions:
@@ -173,7 +173,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: Markdown Editor v${{ github.ref_name }}
+          name: Markdown Editor ${{ github.ref_name }}
           body: |
             ## Downloads
 
