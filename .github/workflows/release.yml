@@ -52,6 +52,10 @@ jobs:
           INTEL_APP=$(ls -d src-tauri/target/release-Intel/*.app)
           ARM_APP=$(ls -d src-tauri/target/release-ARM/*.app)
 
+          # Get the binary names (might be Markdown Editor or Markdown-Editor)
+          INTEL_BINARY=$(ls "${INTEL_APP}/Contents/MacOS/")
+          ARM_BINARY=$(ls "${ARM_APP}/Contents/MacOS/")
+
           # Create universal binary directory
           mkdir -p "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}"
 
@@ -60,9 +64,9 @@ jobs:
 
           # Create universal binary using lipo
           lipo -create \
-            "${INTEL_APP}/Contents/MacOS/Markdown Editor" \
-            "${ARM_APP}/Contents/MacOS/Markdown Editor" \
-            -output "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}/Contents/MacOS/Markdown Editor"
+            "${INTEL_APP}/Contents/MacOS/${INTEL_BINARY}" \
+            "${ARM_APP}/Contents/MacOS/${ARM_BINARY}" \
+            -output "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}/Contents/MacOS/${INTEL_BINARY}"
 
           # Copy resources from arm app
           cp -r "${ARM_APP}/Contents/Resources" "src-tauri/target/release/bundle/macos-universal/${INTEL_APP##*/}/Contents/"
